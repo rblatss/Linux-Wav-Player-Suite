@@ -1,8 +1,8 @@
 CC=g++
 #add -D DEBUG to CFLAGS for DEBUG output
-CFLAGS=-std=c++11 
+CFLAGS=-std=c++11
 IPATH=include/
-LIBS=-lpthread -lm -lasound
+LIBS=-lpthread -lm -lasound -ldl
 PLAY_SRC=src/Play.cc src/Wav_File.cc
 STOP_SRC=src/Stop.cc
 PAUSE_SRC=src/Pause.cc
