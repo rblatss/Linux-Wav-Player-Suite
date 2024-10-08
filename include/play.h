@@ -1,18 +1,21 @@
 /* ***********************************************
  *                                               *
- *                     Stop                      *
+ *                     Play                      *
  *                Robert Blatner                 *
  *                                               *
  * ******************************************** */
+#ifndef PLAY
+#define PLAY
 
-#include "../include/Stop.h"
+/*
+ * play:
+ *
+ * Play the WAV file.
+ *
+ * Returns:
+ *   0 on success
+ *   1 on error
+ */
+int play(char* filename, bool display_info);
 
-// Entry Point
-int main()
-{
-  if (Stop() == -1)
-  {
-    printf("Play's not playing anything ...\n");
-  }
-  return 0;
-}
+#endif
