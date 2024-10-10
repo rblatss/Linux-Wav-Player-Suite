@@ -3,6 +3,7 @@
 
 #include <cstring> // strcat()
 #include <stdexcept>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "constants.h"
@@ -12,11 +13,11 @@
 // will be generated at compile time
 class Uncopyable
 {
-private:
-  Uncopyable(const Uncopyable &);
-  Uncopyable &operator=(const Uncopyable &);
+  private:
+  Uncopyable(const Uncopyable&);
+  Uncopyable& operator=(const Uncopyable&);
 
-public:
+  public:
   Uncopyable() {}
   ~Uncopyable() {}
 };
@@ -26,38 +27,65 @@ public:
 // accessing it's header information and data etc.
 class WavFile : private Uncopyable
 {
-private:
-  char *data_;
-  char *filename_;
-  FILE *wav_file_io_;
+  private:
+  uint8_t* data_;
+  char* filename_;
+  FILE* wav_file_io_;
 
   WavHeaderFormat wav_header_;
 
-  int ConvertToInt(char *);
-  void ReadConfig();
+  // Convert Wav id from char array to integer
+  int ConvertToInt(char*);
 
-public:
-  WavFile(const char *filename) : data_(NULL), wav_file_io_(NULL)
+  public:
+  WavFile(const char* filename) : data_(NULL), wav_file_io_(NULL), filename_(NULL)
   {
-
-    if (filename)
+    if (filename != NULL)
     {
       filename_ = new char[strlen(filename)];
       strcpy(filename_, filename);
     }
   }
-  ~WavFile()
-  {
-    Close();
-  }
+  ~WavFile() { Close(); }
 
+  /*
+   * Open:
+   *
+   * Read the WAV file's header info and data.
+   *
+   * Returns:
+   *   true on success
+   *   false on error
+   */
   bool Open();
+
+  /*
+   * Close:
+   *
+   * Close stream to WAV file and free memory.
+   *
+   * Returns:
+   *   true on success,
+   *   false otherwise.
+   */
   bool Close();
 
+  /*
+   * DisplayWavInfo:
+   *
+   * Print WAV file header info.
+   *
+   * Returns:
+   *   true on success,
+   *   false otherwise.
+   *
+   */
   bool DisplayWavInfo() const;
-  char *GetData() const;
-  char *GetFilename() const;
-  char operator[](int pos) const;
+
+  /* Accessors */
+  uint8_t* GetData() const;
+  char* GetFilename() const;
+  uint8_t operator[](int pos) const;
   int GetDataLength() const;
   int GetNumberChannels() const;
   int GetSampleRate() const;

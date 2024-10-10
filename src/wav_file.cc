@@ -1,6 +1,5 @@
 ﻿#include "../include/wav_file.h"
 
-// Convert Wav id from char array to integer
 int WavFile::ConvertToInt(char* a)
 {
   int result = 0;
@@ -11,12 +10,6 @@ int WavFile::ConvertToInt(char* a)
   return result;
 }
 
-// Reads the wav file's header info and wav data and stores
-// in struct and char array, respectively.
-//
-// Returns true if file opens, header information is read
-// correctly and all data is read.
-// Returns false if fopen()/fread() fail
 bool WavFile::Open()
 {
 
@@ -43,14 +36,8 @@ bool WavFile::Open()
     char strChunkID[5];
     strChunkID[4] = '\0';
     fread(strChunkID, sizeof(char), 4, wav_file_io_);
-    // fscanf( wav_file_io_, "%u", &chunkid);
 
     unsigned int chunkid = ConvertToInt(strChunkID);
-
-#ifdef DEBUG
-    printf("Here %s -> %d\n", strChunkID, chunkid);
-#endif
-
     switch ((WavChunks)chunkid)
     {
       case WavChunks::Format:
@@ -59,7 +46,6 @@ bool WavFile::Open()
 #endif
 
         strcpy(wav_header_.fmt, strChunkID);
-
         fread(&wav_header_.fmt_size, sizeof(int), 1, wav_file_io_);
         fread(&wav_header_.audio_format, sizeof(short), 1, wav_file_io_);
         fread(&wav_header_.number_channels, sizeof(short), 1, wav_file_io_);
@@ -96,7 +82,7 @@ bool WavFile::Open()
 
         // Read Wav Data
         fread(&wav_header_.data_size, sizeof(int), 1, wav_file_io_);
-        if (!(data_ = new char[wav_header_.data_size]))
+        if (!(data_ = new uint8_t[wav_header_.data_size]))
         {
           fprintf(stderr, "Out of memory error\n");
           fclose(wav_file_io_);
@@ -141,9 +127,6 @@ bool WavFile::Open()
   return true;
 }
 
-// Calls fclose() on the FILE* member
-// Returns true if successful
-// otherwise, returns false
 bool WavFile::Close()
 {
   if (wav_file_io_)
@@ -162,9 +145,6 @@ bool WavFile::Close()
   }
 }
 
-// Displays all information contained in wav_header_ struct
-// Returns true if successful or false if header information
-// is not available
 bool WavFile::DisplayWavInfo() const
 {
   if (!wav_file_io_)
@@ -172,6 +152,7 @@ bool WavFile::DisplayWavInfo() const
     return false;
   }
 
+  printf("\n");
   printf("RIFF header                : %c%c%c%c\n", wav_header_.riff[0], wav_header_.riff[1],
          wav_header_.riff[2], wav_header_.riff[3]);
   printf("RIFF size                  : %u\n", wav_header_.riff_size);
@@ -196,13 +177,11 @@ bool WavFile::DisplayWavInfo() const
   return true;
 }
 
-// Return pointer to data (NULL on failure)
-char* WavFile::GetData() const { return data_; }
+uint8_t* WavFile::GetData() const { return data_; }
 
-// Return pointer to filename (NULL on failure)
 char* WavFile::GetFilename() const { return filename_; }
 
-char WavFile::operator[](int pos) const { return data_[pos]; }
+uint8_t WavFile::operator[](int pos) const { return data_[pos]; }
 
 int WavFile::GetDataLength() const { return wav_header_.data_size; }
 

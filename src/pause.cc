@@ -1,34 +1,34 @@
 #include "../include/pause.h"
 
+#include <signal.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 pid_t pause()
 {
-  char filename[] = "/tmp/pid.txt";
-  char c;
-  FILE* pid_file;
-  int len;
+  const char filename[] = "/tmp/pid.txt";
+  FILE* pid_file_hdl;
   pid_t pid;
-  int rc;
+  int scan_cnt;
 
   // Extract the PID from the temp file.
   // Return if the file is empty
-  pid_file = fopen(filename, "rb");
-  if (!pid_file)
+  pid_file_hdl = fopen(filename, "rb");
+  if (!pid_file_hdl)
   {
     printf("No music to pause!\n");
     return -1;
   }
-
-  rc = fscanf(pid_file, "%d", &pid);
-  fclose(pid_file);
-
-  // Signal the play application
-  if(rc != 0)
+  else
   {
-    kill(pid, SIGUSR1);
-  }
+    scan_cnt = fscanf(pid_file_hdl, "%d", &pid);
+    fclose(pid_file_hdl);
 
-  return pid;
+    // Signal the play application
+    if (scan_cnt > 0)
+    {
+      kill(pid, SIGUSR1);
+    }
+
+    return pid;
+  }
 }

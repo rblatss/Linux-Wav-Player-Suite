@@ -6,7 +6,6 @@
 
 const int PI = 3.14159265359;
 
-// C++11 scoped enums
 enum class WavChunks
 {
   RiffHeader = 0x52494646,

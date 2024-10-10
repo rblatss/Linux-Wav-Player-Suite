@@ -8,27 +8,29 @@ The audio control is handled by the [ALSA library](https://www.alsa-project.org/
 
 Currently, this "suite of programs" is only composed of *Play, Stop* and *Pause*. I do not have plans to complete *Plot, ff* and *Rewind* at this time.
 
-Work in progress: I created a Dockerfile so that this project can be built and demonstrated anywhere. But, I used WSL to write these instructions, so there are some notes specific for running the Docker container in WSL.
+Work in progress:
+- The dev container isn't quite right. But, i've been trying to get it working using WSL.
+- The apps do janky interprocess communication - play writes its PID to a temp file, and stop / pause read the PID from the file. I'd like to do something more linux-y. I added the `procps` repo as a submodule and i'm hoping to find something i can either integrate or steal.
+- Audio isn't playing quite right. Is this WSL or a problem with the `play` app?
 
 Setup
 ------------
 From your Linux environment:
-1. Clone this repository and open a workspace into the root level directory of the cloned repository,
 1. Install [Docker Engine](https://docs.docker.com/engine/install/),
-1. Install the [VSCode Docker extension](https://code.visualstudio.com/docs/containers/overview#_installation),
-1. Configure Docker for [rootless mode](https://docs.docker.com/engine/security/rootless/)<sup>1</sup>,
-1. Install the [VSCode Dev Containers extension](https://code.visualstudio.com/docs/devcontainers/containers#_installation), and [create a devcontainers.json file](https://code.visualstudio.com/docs/devcontainers/containers#_create-a-devcontainerjson-file),
-1. TODO Connect to an instance of this repository's Docker image:
+1. TODO Install the [VSCode Docker extension](https://code.visualstudio.com/docs/containers/overview#_installation),
+1. TODO Configure Docker for [rootless mode](https://docs.docker.com/engine/security/rootless/)<sup>1</sup>,
+1. TODO Install the [VSCode Dev Containers extension](https://code.visualstudio.com/docs/devcontainers/containers#_installation), and [create a devcontainers.json file](https://code.visualstudio.com/docs/devcontainers/containers#_create-a-devcontainerjson-file),
+1. Clone this repository and open a workspace into the root level directory of the cloned repository,
+1. Build the Docker image:
     ```
     docker pull gcc
     docker build . -t gcc-alsa
-    docker run -it -e "PULSE_SERVER=${PULSE_SERVER}" -v /mnt/    wslg/:/mnt/wslg/ gcc-alsa:latest
     ```
-Depending on your Docker installation, you might need to prefix these commands with `sudo`.
-
-The -e / -v options are passed in for WSL (credit for this goes to Jeremiah on [stackoverflow](https://stackoverflow.com/questions/68310978/playing-sound-in-docker-container-on-wsl-in-windows-11)). If not using WSL, you probably need to pass in `--device /dev/snd` (my [source](https://github.com/mviereck/x11docker/wiki/Container-sound:-ALSA-or-Pulseaudio)). 
-
-<sup>1</sup>If you're using WSL (like me), you may need to manually configure DNS:
+1. TODO Connect to an instance of this repository's Docker image<sup>2</sup>:
+    ```
+    docker run -it -e "PULSE_SERVER=${PULSE_SERVER}" -v /mnt/    wslg/:/mnt/wslg/ gcc-alsa:latest  # see note 3
+    ```
+<sup>1</sup>For rootless mode in WSL, you may need to manually configure DNS:
 
 1. Add the following to `/etc/wsl.conf`:
     ```
@@ -41,13 +43,20 @@ The -e / -v options are passed in for WSL (credit for this goes to Jeremiah on [
     nameserver 8.8.8.8
     ```
 
+<sup>2</sup>Depending on your Docker installation, you might need to prefix these commands with `sudo`.
+
+<sup>3</sup>The -e / -v options are passed in to make the WSL audio available to the Docker container (credit for this goes to Jeremiah on [stackoverflow](https://stackoverflow.com/a/68316880/4455974)). If using real Linux, you might just need to use `--device /dev/snd` (my [source](https://github.com/mviereck/x11docker/wiki/Container-sound:-ALSA-or-Pulseaudio)). 
+
 
 Build and run
 -----
 
-From inside the container: 
+From inside the container, at the root of the repository directory: 
 ```
 make
+```
+Then, try 'em out!
+```
 build/play samples/violins.wav
 build/pause  # pause
 build/pause  # resume
@@ -59,7 +68,7 @@ docker ps -as  # prints a list of container IDs
 docker cp <container ID>:/build/* .
 ```
 
-Cleanup:
+And, to cleanup the Docker stuff if need be:
 ```
 docker rm <container ID>    # remove container
 docker rmi gcc-alsa         # remove image
