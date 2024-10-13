@@ -16,6 +16,6 @@
  *   0 on success
  *   1 on error
  */
-int play(char* filename, bool display_info);
+int play(char* filename);
 
 #endif
