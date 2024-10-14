@@ -15,6 +15,7 @@
 
 // Constants
 constexpr uint8_t WAV_EXT_SIZE = 4;
+constexpr uint8_t NULL_TERM_SIZE = 1;
 
 void FindWavs(const char* curr_pwd, unsigned int plen, std::vector<char*>* wav_names,
               std::vector<char*>* wav_paths)
@@ -22,7 +23,7 @@ void FindWavs(const char* curr_pwd, unsigned int plen, std::vector<char*>* wav_n
   DIR* contents;
   dirent* entry;
   int filename_len;
-  char new_pwd[PATH_MAX + 1];
+  char new_pwd[PATH_MAX + NULL_TERM_SIZE];
 
   // Ensure # characters of path below PATH_MAX limit
   if (plen > PATH_MAX)
@@ -54,21 +55,20 @@ void FindWavs(const char* curr_pwd, unsigned int plen, std::vector<char*>* wav_n
       strncpy(new_pwd, curr_pwd, PATH_MAX);
       new_pwd[plen] = '/';
       strncat(new_pwd, entry->d_name, PATH_MAX);
-
-      FindWavs(new_pwd, plen + 1 + strlen(entry->d_name), wav_names, wav_paths);
+      FindWavs(new_pwd, plen + NULL_TERM_SIZE + strlen(entry->d_name), wav_names, wav_paths);
     }
 
     else if (entry->d_type == DT_REG)
     {
       // Check for the WAV file extension
       filename_len = strlen(entry->d_name);
-      if (strncmp(&entry->d_name[filename_len - 4], ".wav", WAV_EXT_SIZE) == 0)
+      if (strncmp(&entry->d_name[filename_len - WAV_EXT_SIZE], ".wav", WAV_EXT_SIZE) == 0)
       {
         // Cache name of the file
         wav_names->push_back(entry->d_name);
 
         // Construct the path and cache it
-        char* temp = new char[plen + 1 + filename_len];
+        char* temp = new char[plen + NULL_TERM_SIZE + filename_len];
         strncpy(temp, curr_pwd, PATH_MAX - filename_len - 1);
         temp[plen] = '/';
         strncat(temp, entry->d_name, filename_len);
@@ -122,12 +122,12 @@ bool VerifyFilepath(char* arg)
   int len = strlen(arg);
 
   // The extension is 4 characters.
-  if (len < 5)
+  if (len <= WAV_EXT_SIZE)
   {
     return false;
   }
 
-  return strncmp(&arg[len - 4], ".wav", WAV_EXT_SIZE) == 0;
+  return strncmp(&arg[len - WAV_EXT_SIZE], ".wav", WAV_EXT_SIZE) == 0;
 }
 
 void PrintUsage(FILE* stream, int exit_code, const char* program_name)
@@ -224,30 +224,31 @@ int main(int argc, char* argv[])
   }
 
   // Verify final filepath
-  if (!VerifyFilepath(filepath))
+  if (VerifyFilepath(filepath) == false)
   {
     PrintUsage(stderr, 1, argv[0]);
   }
 
-  // Handle print info option specially
+  // Handle the option to print the WAV file info specially
+  int rc = 0;
   if(print_info_only == true)
   {
     WavFile theWavFile(filepath);
     if (theWavFile.Open() == false)
     {
-      return 1;
+      rc = 1;
     }
-
-    if (print_info_only == true)
+    else if (print_info_only == true)
     {
       theWavFile.DisplayWavInfo();
-      return 0;
     }
   }
 
   // Otherwise, play
   else
   {
-    return play(filepath);
+    rc = play(filepath);
   }
+
+  return rc;
 }

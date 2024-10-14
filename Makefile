@@ -15,12 +15,12 @@ setup:
 	mkdir -p build
 
 # Build stop and pause as executables and also libraries for linking with play.
-stop : src/stop.cc src/driver_stop.c
+stop : src/stop.cc src/driver_stop.cc
 	$(CC) -I $(IPATH) src/stop.cc -c -o build/stop.o
 	$(AR) -r build/libstop.a build/stop.o
 	$(CC) -B build/ -I $(IPATH) src/driver_stop.cc build/stop.o -o build/stop -lstop
 
-pause : src/pause.cc src/driver_pause.c
+pause : src/pause.cc src/driver_pause.cc
 	$(CC) -I $(IPATH) src/pause.cc -c -o build/pause.o
 	$(AR) -r build/libpause.a build/pause.o
 	$(CC) -B build/ -I $(IPATH) src/driver_pause.cc build/pause.o -o build/pause -lpause

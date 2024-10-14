@@ -18,7 +18,6 @@ constexpr char PCM_DEVICE[] = "default";
 int pcm_pause_enable_state = 0;
 snd_pcm_t* pcm_handle;
 
-// TODO error handling - how do you test this?
 int ConfigureALSAAudio(snd_pcm_t* device, snd_pcm_hw_params_t*& hw_params, int channels,
                        int sample_rate, int sample_size)
 {
@@ -193,6 +192,7 @@ int play_wav(char* filename)
   int sample_rate = theWavFile.GetSampleRate();
   int sample_size = theWavFile.GetSampleSize();
   double seconds = (double)theWavFile.GetDataLength() / theWavFile.GetBytesPerSecond();
+  unsigned long number_frames = data_length / channels / sample_size;
 
   // Open the PCM device in playback mode
   if ((pcm = snd_pcm_open(&pcm_handle, PCM_DEVICE, SND_PCM_STREAM_PLAYBACK, 0)) < 0)
@@ -229,27 +229,18 @@ int play_wav(char* filename)
   printf("period size (frames): %llu\n", frames);
 #endif
 
-  // TODO convert interleaved to non-interleaved?
-
-  int index = 0;
+  int buff_index = 0;
+  unsigned long frames_index = 0;
   for (int loops = static_cast<int>((seconds * US_PER_S) / period_us) + 1; loops > 0; loops--)
   {
 
     // Fill buffer with a period's worth of samples
-    buff_size = std::min(buff_size, data_length - index);
-    memcpy(buff, &theWavFile.GetData()[index], buff_size);
+    frames = std::min(static_cast<unsigned long>(frames), number_frames - frames_index);
+    buff_size = frames * channels * sample_size;
+    memcpy(buff, &theWavFile.GetData()[buff_index], buff_size);
 
     // Write buffer to PCM
-    if (channels == 1)
-    {
-      // TODO
-      pcm = snd_pcm_writen(pcm_handle, (void**)&buff, buff_size);
-    }
-    else
-    {
-      pcm = snd_pcm_writei(pcm_handle, buff,
-                           frames); // TODO frames is probably wrong in the last loop
-    }
+    pcm = snd_pcm_writei(pcm_handle, buff, frames);
 
     // Check for errors
     if (pcm == -EPIPE)
@@ -262,8 +253,9 @@ int play_wav(char* filename)
       printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(pcm));
     }
 
-    // Increment index
-    index += buff_size;
+    // Increment indices
+    buff_index += buff_size;
+    frames_index += frames;
   }
 
   // Play wav

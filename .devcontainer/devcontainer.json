@@ -6,33 +6,29 @@
 		// Sets the run context to one level up instead of the .devcontainer folder.
 		"context": "..",
 		// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
-		"dockerfile": "../Dockerfile"
+		"dockerfile": "../Dockerfile",
+		"args": {
+			"NEWUSER": "robertblatner"
+		}
 	},
-
-	// "runArgs": [
-	// 	"-e PULSE_SERVER=/mnt/wslg/PulseServer",
-	// 	"-v /mnt/wslg/:/mnt/wslg/"
-	// ],
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "cat /etc/os-release",
-
+	// Args passed to `docker run`
+	"runArgs": [
+		"--name=bombadil",
+		"--env=PULSE_SERVER=/mnt/wslg/PulseServer",
+		"--volume=/mnt/wslg:/mnt/wslg"
+	],
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
-		  "extensions": [
-			"ms-vscode.cpptools",
-			"ms-vscode.cpptools-extension-pack",
-			"ms-vscode.makefile-tools"]
+			"extensions": [
+				"ms-vscode.cpptools",
+				"ms-vscode.cpptools-extension-pack",
+				"ms-vscode.makefile-tools"
+			]
 		}
-	}
-
+	},
 	// Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "devcontainer"
+	"remoteUser": "robertblatner",
+	// Sets the default folder to be here instead of /workspaces/Linux-Wav-Player-Suite
+	"workspaceFolder": "/Linux-Wav-Player-Suite"
 }
