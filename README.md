@@ -6,21 +6,27 @@ An exercise in C++ to implement the functionality of a media player (play, stop,
 Currently, this "suite of programs" is only composed of *Play, Stop* and *Pause*. I do not have plans to complete *Plot, ff* and *Rewind* at this time.
 
 Work in progress:
-- The apps do janky interprocess communication - play writes its PID to a temp file, and stop / pause read the PID from the file. I'd like to do something more linux-y. I added the [`procps`](https://gitlab.com/procps-ng/procps) repo as a submodule and i'm hoping to find something i can either integrate or steal.
+- The apps do janky interprocess communication - play writes its PID to a temp file, and stop / pause read the PID from the file. I'd like to do something more linux-y. I added the [`procps`](https://gitlab.com/procps-ng/procps) repo as a submodule looking for some inspiration.
+- GitHub Actions: format + build stages.
+- makefile -> CMake?
+- Valgrind (also see https://invisible-island.net/personal/lint-tools.html for other ideas, static and dynamic analysis tools)
+- Unit tests / integration tests
 
 ## Setup
 From your Linux environment:
 1. Install [Docker Engine](https://docs.docker.com/engine/install/),
 1. Clone this repository and open a workspace into the root level directory of the cloned repository.
 
+Then, the Docker environment can be created and used in at least the 2 following ways:
 ### Option 1: Dev Containers
+
 3. Install the [VSCode Docker extension](https://code.visualstudio.com/docs/containers/overview#_installation),
 1. Install the [VSCode Dev Containers extension](https://code.visualstudio.com/docs/devcontainers/containers#_installation),
 1. Configure Docker for [rootless mode](https://docs.docker.com/engine/security/rootless/)<sup>1</sup>,
-1. Modify the `devcontainers.json` in this repository with the username as it on your host machine,
+1. Modify the `devcontainers.json` in this repository with your username as it is configured for git on your host machine,
 1. Open VSCode commandline options with `ctrl+shift+P`, then choose `Dev Containers: Open Folder in Container...`
 
-### Setup Option 2: manually
+### Option 2: manually
 3. Build the Docker image:
     ```
     docker buildx build . -t gcc-alsa --build-arg NEWUSER=$(whoami)
@@ -35,7 +41,7 @@ From your Linux environment:
     docker run -dt -e "PULSE_SERVER=${PULSE_SERVER}" -v /mnt/wslg/:/mnt/wslg/ --name bombadil gcc-alsa:latest
     docker attach bombadil
     ```
-
+------------
 <sup>1</sup>For rootless mode in WSL, you may need to manually configure DNS:
 
 1. Add the following to `/etc/wsl.conf`:
@@ -43,7 +49,7 @@ From your Linux environment:
     [network]
     generateResolvConf = false
     ```
-1. Reboot.
+1. Reboot, then
 1. Create /etc/resolv.conf and add the following:
     ```
     nameserver 8.8.8.8

@@ -17,8 +17,8 @@
 constexpr uint8_t WAV_EXT_SIZE = 4;
 constexpr uint8_t NULL_TERM_SIZE = 1;
 
-void FindWavs(const char* curr_pwd, unsigned int plen, std::vector<char*>* wav_names,
-              std::vector<char*>* wav_paths)
+static void FindWavs(const char* curr_pwd, unsigned int plen, std::vector<char*>& wav_names,
+              std::vector<char*>& wav_paths)
 {
   DIR* contents;
   dirent* entry;
@@ -65,14 +65,14 @@ void FindWavs(const char* curr_pwd, unsigned int plen, std::vector<char*>* wav_n
       if (strncmp(&entry->d_name[filename_len - WAV_EXT_SIZE], ".wav", WAV_EXT_SIZE) == 0)
       {
         // Cache name of the file
-        wav_names->push_back(entry->d_name);
+        wav_names.push_back(entry->d_name);
 
         // Construct the path and cache it
         char* temp = new char[plen + NULL_TERM_SIZE + filename_len];
         strncpy(temp, curr_pwd, PATH_MAX - filename_len - 1);
         temp[plen] = '/';
         strncat(temp, entry->d_name, filename_len);
-        wav_paths->push_back(temp);
+        wav_paths.push_back(temp);
       }
     }
   }
@@ -80,10 +80,10 @@ void FindWavs(const char* curr_pwd, unsigned int plen, std::vector<char*>* wav_n
   closedir(contents);
 }
 
-int GetWavPath(char* filename, std::vector<char*>* wav_names)
+static int GetWavPath(char* filename, std::vector<char*> &wav_names)
 {
   int index = 0;
-  for (auto itr = wav_names->begin(); itr != wav_names->end(); itr++, index++)
+  for (auto itr = wav_names.begin(); itr != wav_names.end(); itr++, index++)
   {
     if (strcmp(*itr, filename) == 0)
     {
@@ -94,15 +94,15 @@ int GetWavPath(char* filename, std::vector<char*>* wav_names)
   return EOF;
 }
 
-void PrintListOfWavs(std::vector<char*>* wav_names)
+static void PrintListOfWavs(std::vector<char*>& wav_names)
 {
-  for (auto itr = wav_names->begin(); itr != wav_names->end(); itr++)
+  for (auto itr = wav_names.begin(); itr != wav_names.end(); itr++)
   {
     printf("%s\n", *itr);
   }
 }
 
-void GetMusicDirectoryPath(char* music_dir)
+static void GetMusicDirectoryPath(char* music_dir)
 {
   const char* home_path = getenv("HOME");
   if (home_path)
@@ -117,7 +117,7 @@ void GetMusicDirectoryPath(char* music_dir)
   strncat((char*)music_dir, "/Music", PATH_MAX);
 }
 
-bool VerifyFilepath(char* arg)
+static bool VerifyFilepath(char* arg)
 {
   int len = strlen(arg);
 
@@ -130,7 +130,7 @@ bool VerifyFilepath(char* arg)
   return strncmp(&arg[len - WAV_EXT_SIZE], ".wav", WAV_EXT_SIZE) == 0;
 }
 
-void PrintUsage(FILE* stream, int exit_code, const char* program_name)
+static void PrintUsage(FILE* stream, int exit_code, const char* program_name)
 {
 
   fprintf(stream, "Usage: %s [options] filename.wav\n", program_name);
@@ -187,8 +187,8 @@ int main(int argc, char* argv[])
       case 'm':
         use_music_library = true;
         GetMusicDirectoryPath(filepath);
-        FindWavs(filepath, strlen(filepath), &wav_names, &wav_paths);
-        index = GetWavPath(argv[optind], &wav_names);
+        FindWavs(filepath, strlen(filepath), wav_names, wav_paths);
+        index = GetWavPath(argv[optind], wav_names);
         if (index == EOF)
         {
           printf("Can't find the file. Are you sure you spelled it correctly?\n\n");
@@ -198,8 +198,8 @@ int main(int argc, char* argv[])
 
       case 'p':
         GetMusicDirectoryPath(filepath);
-        FindWavs(filepath, strlen(filepath), &wav_names, &wav_paths);
-        PrintListOfWavs(&wav_names);
+        FindWavs(filepath, strlen(filepath), wav_names, wav_paths);
+        PrintListOfWavs(wav_names);
         exit(0);
         break;
 

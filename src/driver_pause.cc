@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void PrintUsage(FILE* stream, const char* program_name)
+static void PrintUsage(FILE* stream, const char* program_name)
 {
   fprintf(stream, "Usage: %s\n", program_name);
   fprintf(stream,

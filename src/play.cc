@@ -18,7 +18,7 @@ constexpr char PCM_DEVICE[] = "default";
 int pcm_pause_enable_state = 0;
 snd_pcm_t* pcm_handle;
 
-int ConfigureALSAAudio(snd_pcm_t* device, snd_pcm_hw_params_t*& hw_params, int channels,
+static int ConfigureALSAAudio(snd_pcm_t* device, snd_pcm_hw_params_t*& hw_params, int channels,
                        int sample_rate, int sample_size)
 {
   int err;
@@ -106,7 +106,7 @@ int ConfigureALSAAudio(snd_pcm_t* device, snd_pcm_hw_params_t*& hw_params, int c
   return 0;
 }
 
-void HandleSignal(int signal)
+static void HandleSignal(int signal)
 {
 
   // Critical Section to perform i/o
@@ -116,8 +116,6 @@ void HandleSignal(int signal)
 
   sigaddset(&newMask, signal);
   sigprocmask(SIG_BLOCK, &newMask, &oldMask);
-
-  sigset_t pending;
 
   switch (signal)
   {
@@ -134,9 +132,10 @@ void HandleSignal(int signal)
       snd_pcm_pause(pcm_handle, pcm_pause_enable_state);
       break;
 
+    // Acknowledge SIGINT, but do nothing
     case SIGINT:
-      printf("Caught SIGINT, exiting now\n");
-      exit(0);
+      printf("Caught SIGINT\n");
+      break;
 
     default:
       fprintf(stderr, "Caught wrong signal: %d\n", signal);
@@ -147,7 +146,7 @@ void HandleSignal(int signal)
   sigprocmask(SIG_SETMASK, &oldMask, NULL);
 }
 
-bool WritePIDRecord(pid_t pid)
+static bool WritePIDRecord(pid_t pid)
 {
   FILE* pid_file = fopen("/tmp/pid.txt", "wb");
   if (pid_file == NULL)
@@ -160,7 +159,7 @@ bool WritePIDRecord(pid_t pid)
   return true;
 }
 
-bool DeletePIDRecord()
+static bool DeletePIDRecord()
 {
   char pid_file[] = "/tmp/pid.txt";
   if (remove(pid_file) != 0)
@@ -171,7 +170,7 @@ bool DeletePIDRecord()
   return true;
 }
 
-int play_wav(char* filename)
+static int play_wav(char* filename)
 {
   WavFile theWavFile(filename);
   unsigned int pcm, period_us;
@@ -187,11 +186,10 @@ int play_wav(char* filename)
   }
 
   // Get Wav info
-  int channels = theWavFile.GetNumberChannels();
-  int data_length = theWavFile.GetDataLength();
-  int sample_rate = theWavFile.GetSampleRate();
-  int sample_size = theWavFile.GetSampleSize();
-  double seconds = (double)theWavFile.GetDataLength() / theWavFile.GetBytesPerSecond();
+  unsigned short channels = theWavFile.GetNumberChannels();
+  unsigned int data_length = theWavFile.GetDataLength();
+  unsigned int sample_rate = theWavFile.GetSampleRate();
+  unsigned int sample_size = theWavFile.GetSampleSize();
   unsigned long number_frames = data_length / channels / sample_size;
 
   // Open the PCM device in playback mode
@@ -224,14 +222,15 @@ int play_wav(char* filename)
   printf(tmp == 1 ? "(mono)\n" : "(stereo)\n");
   snd_pcm_hw_params_get_rate(params, &tmp, 0);
   printf("rate: %d bps\n", tmp);
+  double seconds = (double)theWavFile.GetDataLength() / theWavFile.GetBytesPerSecond();
   printf("seconds: %f\n", seconds);
   printf("period time (us): %u\n", period_us);
   printf("period size (frames): %llu\n", frames);
 #endif
 
-  int buff_index = 0;
   unsigned long frames_index = 0;
-  for (int loops = static_cast<int>((seconds * US_PER_S) / period_us) + 1; loops > 0; loops--)
+  for (unsigned int buff_index = 0; buff_index < data_length;
+       buff_index += buff_size, frames_index += frames)
   {
 
     // Fill buffer with a period's worth of samples
@@ -252,10 +251,6 @@ int play_wav(char* filename)
     {
       printf("ERROR. Can't write to PCM device. %s\n", snd_strerror(pcm));
     }
-
-    // Increment indices
-    buff_index += buff_size;
-    frames_index += frames;
   }
 
   // Play wav
@@ -268,9 +263,13 @@ int play_wav(char* filename)
   } while (err != 1);
 
   // Clean up
+#ifdef DEBUG
+  // TODO this won't print when the app is signaled with SIGHUP
+  printf("Cleaning up\n");
+#endif
   snd_pcm_drain(pcm_handle);
   snd_pcm_close(pcm_handle);
-  free(buff);
+  delete[] buff;
 
   return 0;
 }
@@ -288,33 +287,39 @@ int play(char* filepath)
       stop();
     }
 
-    // Setup for signal handling
-    struct sigaction sa;
-    memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = &HandleSignal;
-
-    // Pause
-    if (sigaction(SIGUSR1, &sa, NULL) == -1)
-    {
-      perror("Error: cannot handle SIGUSR1"); // Should not happen
-    }
-
-    // TODO ff or rewind
-    if (sigaction(SIGUSR2, &sa, NULL) == -1)
-    {
-      perror("Error: cannot handle SIGUSR2"); // Should not happen
-    }
-
-    // Stop or Terminal Exits
-    if (sigaction(SIGHUP, &sa, NULL) == -1)
-    {
-      perror("Error: cannot handle SIGHUP"); // Should not happen
-    }
-
     // Attempt playing the file
     pid_t this_pid = getpid();
     if (WritePIDRecord(this_pid))
     {
+
+      // Setup for signal handling
+      struct sigaction sa;
+      memset(&sa, 0, sizeof(sa));
+      sa.sa_handler = &HandleSignal;
+
+      // Pause
+      if (sigaction(SIGUSR1, &sa, NULL) == -1)
+      {
+        perror("Error: cannot handle SIGUSR1"); // Should not happen
+      }
+
+      // TODO ff or rewind
+      if (sigaction(SIGUSR2, &sa, NULL) == -1)
+      {
+        perror("Error: cannot handle SIGUSR2"); // Should not happen
+      }
+
+      // Stop or Terminal Exits
+      if (sigaction(SIGHUP, &sa, NULL) == -1)
+      {
+        perror("Error: cannot handle SIGHUP"); // Should not happen
+      }
+
+      // Handle SIGINT
+      if (sigaction(SIGINT, &sa, NULL) == -1)
+      {
+        perror("Error: cannot handle SIGINT"); // Should not happen
+      }
 
       // Enter main program
       rc = play_wav(filepath);

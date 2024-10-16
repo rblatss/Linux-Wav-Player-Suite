@@ -42,11 +42,16 @@ class WavFile : private Uncopyable
   {
     if (filename != NULL)
     {
-      filename_ = new char[strlen(filename)];
-      strcpy(filename_, filename);
+      int filename_len = strlen(filename);
+      filename_ = new char[filename_len];
+      strncpy(filename_, filename, filename_len);
     }
   }
-  ~WavFile() { Close(); }
+  ~WavFile()
+  {
+    Close();
+    delete[] filename_;
+  }
 
   /*
    * Open:
@@ -86,10 +91,10 @@ class WavFile : private Uncopyable
   uint8_t* GetData() const;
   char* GetFilename() const;
   uint8_t operator[](int pos) const;
-  int GetDataLength() const;
-  int GetNumberChannels() const;
-  int GetSampleRate() const;
-  int GetSampleSize() const;
+  unsigned int GetDataLength() const;
+  unsigned short GetNumberChannels() const;
+  unsigned int GetSampleRate() const;
+  unsigned short GetSampleSize() const;
   unsigned int GetBytesPerSecond() const;
 };
 

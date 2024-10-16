@@ -4,17 +4,21 @@ FROM gcc:14.2.0
 COPY . /Linux-Wav-Player-Suite
 
 # Install dependencies
-RUN apt install -y git
 RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
-RUN apt install -y git-lfs
-RUN apt install -y clang-format clang-tidy
+RUN apt update -qq && apt install -y \
+    git \
+    git-lfs \
+    valgrind \
+    clang-format \
+    clang-tidy
 
 # Install for compatibility with WSL audio devices
-RUN apt-get install -y libsdl2-dev
-RUN apt-get install -y pulseaudio
+RUN apt install -y \
+    libsdl2-dev \
+    pulseaudio
 
 # Build procps
-RUN apt-get update -qq && apt-get install -y -qq autopoint autoconf automake libtool-bin gettext libncursesw5-dev dejagnu libnuma-dev libsystemd-dev
+RUN apt install -y -qq autopoint autoconf automake libtool-bin gettext libncursesw5-dev dejagnu libnuma-dev libsystemd-dev
 WORKDIR /Linux-Wav-Player-Suite/dependencies/procps
 RUN ./autogen.sh
 RUN ./configure

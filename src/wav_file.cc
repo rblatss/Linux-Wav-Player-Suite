@@ -131,12 +131,8 @@ bool WavFile::Close()
 {
   if (wav_file_io_)
   {
-
     fclose(wav_file_io_);
-
     delete[] data_;
-    delete[] filename_;
-
     return true;
   }
   else
@@ -183,12 +179,15 @@ char* WavFile::GetFilename() const { return filename_; }
 
 uint8_t WavFile::operator[](int pos) const { return data_[pos]; }
 
-int WavFile::GetDataLength() const { return wav_header_.data_size; }
+unsigned int WavFile::GetDataLength() const { return wav_header_.data_size; }
 
-int WavFile::GetNumberChannels() const { return wav_header_.number_channels; }
+unsigned short WavFile::GetNumberChannels() const { return wav_header_.number_channels; }
 
-int WavFile::GetSampleRate() const { return wav_header_.sampling_frequency; }
+unsigned int WavFile::GetSampleRate() const { return wav_header_.sampling_frequency; }
 
-int WavFile::GetSampleSize() const { return wav_header_.bits_per_sample / CHAR_BIT; }
+unsigned short WavFile::GetSampleSize() const
+{
+  return static_cast<unsigned short>(wav_header_.bits_per_sample / CHAR_BIT);
+}
 
 unsigned int WavFile::GetBytesPerSecond() const { return wav_header_.bytes_per_second; }
